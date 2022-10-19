@@ -32,7 +32,7 @@ Otherwise, the proxy will perform a series of steps to obtain an access token.
 2. This seems to prompt Visual Studio to retry the request, this time _with_ an `Authorization` header containing credentials that it obtains from the _Git Credential Manager_.
    > ⚠️ Visual Studio will **only** send an `Authorization` header to an **HTTPS** URL.
 
-> From a command line, you should tell _Git Credential Manager_ to store your GitLab credentials against the URL of **this proxy**, e.g.
+> Beforehand, from a command line, you should tell _Git Credential Manager_ to store your GitLab credentials against the URL of **this proxy**, e.g.
 >
 > ```
 > /> git credential-manager-core store
@@ -48,7 +48,7 @@ Otherwise, the proxy will perform a series of steps to obtain an access token.
 
 ## TODO
 
-- Make use of refresh tokens, and/or try to determine expiry times of access tokens.
+- Make use of the refresh token that is returned with the access token, and/or try to determine expiry times of access tokens (though [this page](https://forum.gitlab.com/t/missing-expires-in-in-the-token-response/1232) suggests that they _never expire!_ 😮)
 - Better text translation. Currently it expects all source files to be returned as UTF8 or UTF8-BOM, and will ensure Windows-style line endings (i.e. CRLF).
 
 ## Running the proxy
@@ -58,18 +58,17 @@ You can provide arguments to the webservice in a few different ways, depending o
 1. Modify the `appSettings.json` file:
 
 ```
-
 {
-"GitLabHostOrigin": "https://gitlab.yourdomain.com",
-"AccessToken": "1234567890abcdef",
-"Logging": {
-"LogLevel": {
-"Default": "Information",
-"Microsoft": "Warning",
-"Microsoft.Hosting.Lifetime": "Information"
-}
-},
-"AllowedHosts": "\*"
+	"GitLabHostOrigin": "https://gitlab.yourdomain.com",
+	"AccessToken": "1234567890abcdef",
+	"Logging": {
+		"LogLevel": {
+			"Default": "Information",
+			"Microsoft": "Warning",
+			"Microsoft.Hosting.Lifetime": "Information"
+		}
+	},
+	"AllowedHosts": "\*"
 }
 
 ```
@@ -89,9 +88,5 @@ SourceLinkGitLabProxy --GitLabHostOrigin=https://gitlab.yourdomain.com --AccessT
 ```
 
 docker run -dit -p 8080:80 registry.yourdomain.com/sourcelink-gitlab-proxy --GitLabHostOrigin=https://gitlab.yourdomain.com --AccessToken=1234567890abcdef
-
-```
-
-```
 
 ```
