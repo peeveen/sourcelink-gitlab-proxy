@@ -32,7 +32,16 @@ Otherwise, the proxy will perform a series of steps to obtain an access token.
 2. This seems to prompt Visual Studio to retry the request, this time _with_ an `Authorization` header containing credentials that it obtains from the _Git Credential Manager_.
    > ⚠️ Visual Studio will **only** send an `Authorization` header to an **HTTPS** URL.
 
-> From a command line, you should tell _Git Credential Manager_ to store your GitLab credentials against the URL of **this proxy**, e.g. ![GCM](media/gcm.png?raw=true)
+> From a command line, you should tell _Git Credential Manager_ to store your GitLab credentials against the URL of **this proxy**, e.g.
+>
+> > ```
+> > /> git credential-manager-core store
+> > protocol=https
+> > host=your-PROXY-host-here_no-port
+> > username=your-GITLAB-username-here
+> > password=your-GITLAB-password-here
+> > ^Z
+> > ```
 
 3. When the proxy receives this new request, it will call the `/oauth/token` endpoint on your GitLab server to obtain an access token, passing the username and password that were provided in the `Authorization` header.
 4. If an access token is returned, this token is used to access the GitLab API to fetch the source code. The token is cached, and any future requests from that user will try to use the cached access token. If a request with a cached access token fails, the proxy will generate a new access token (as described in step 3) then retry the request.
@@ -49,24 +58,28 @@ You can provide arguments to the webservice in a few different ways, depending o
 1. Modify the `appSettings.json` file:
 
 ```
+
 {
-	"GitLabHostOrigin": "https://gitlab.yourdomain.com",
-	"AccessToken": "1234567890abcdef",
-	"Logging": {
-		"LogLevel": {
-			"Default": "Information",
-			"Microsoft": "Warning",
-			"Microsoft.Hosting.Lifetime": "Information"
-		}
-	},
-	"AllowedHosts": "*"
+"GitLabHostOrigin": "https://gitlab.yourdomain.com",
+"AccessToken": "1234567890abcdef",
+"Logging": {
+"LogLevel": {
+"Default": "Information",
+"Microsoft": "Warning",
+"Microsoft.Hosting.Lifetime": "Information"
 }
+},
+"AllowedHosts": "\*"
+}
+
 ```
 
 2. If running from a command line:
 
 ```
+
 SourceLinkGitLabProxy --GitLabHostOrigin=https://gitlab.yourdomain.com --AccessToken=1234567890abcdef
+
 ```
 
 > On Windows, the webservice will listen on HTTP port 5000, but you can change that by [editing the relevant fields](https://nodogmablog.bryanhogan.net/2022/01/a-few-ways-of-setting-the-kestrel-ports-in-net-6/) in `appsettings.json`.
@@ -74,5 +87,11 @@ SourceLinkGitLabProxy --GitLabHostOrigin=https://gitlab.yourdomain.com --AccessT
 3. If using a Docker image:
 
 ```
+
 docker run -dit -p 8080:80 registry.yourdomain.com/sourcelink-gitlab-proxy --GitLabHostOrigin=https://gitlab.yourdomain.com --AccessToken=1234567890abcdef
+
+```
+
+```
+
 ```
