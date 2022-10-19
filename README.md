@@ -49,7 +49,7 @@ Otherwise, the proxy will perform a series of steps to obtain an access token.
 ## TODO
 
 - Make use of the refresh token that is returned with the access token, and/or try to determine expiry times of access tokens (though [this page](https://forum.gitlab.com/t/missing-expires-in-in-the-token-response/1232) suggests that they _never expire!_ 😮)
-- Better text translation. Currently it expects all source files to be returned as UTF8 or UTF8-BOM, and will ensure Windows-style line endings (i.e. CRLF).
+- Better text translation. Currently it expects all source files to be returned as UTF8 or UTF8-BOM, and forces Windows-style line endings (i.e. CRLF).
 
 ## Running the proxy
 
