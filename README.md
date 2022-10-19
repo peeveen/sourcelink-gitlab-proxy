@@ -44,7 +44,8 @@ Otherwise, the proxy will perform a series of steps to obtain an access token.
 > ```
 
 3. When the proxy receives this new request, it will call the `/oauth/token` endpoint on your GitLab server to obtain an access token, passing the username and password that were provided in the `Authorization` header.
-4. If an access token is returned, this token is used to access the GitLab API to fetch the source code. The token is cached, and any future requests from that user will try to use the cached access token. If a request with a cached access token fails, the proxy will generate a new access token (as described in step 3) then retry the request.
+4. If an access token is returned, this token is used to access the GitLab API to fetch the source code.
+   - The token is cached, and any future requests from that user will try to use the cached access token. If a request with a cached access token fails, the proxy will generate a new access token (as described in step 3) then retry the request.
 
 ## TODO
 
