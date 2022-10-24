@@ -123,7 +123,7 @@ password=your-GITLAB-password-here
 
 ## Line Endings
 
-_Git for Windows_ has a '_Checkout Windows-style, commit Unix-style line endings_' feature, controlled by the `autocrlf` variable. This feature is **bad news** for Source Link.
+_Git for Windows_ has a '_Checkout Windows-style, commit Unix-style line endings_' feature, controlled by the [`core.autocrlf` variable](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings). This feature is **bad news** for Source Link ([and team-based development in general](https://markentier.tech/posts/2021/10/autocrlf-true-considered-harmful/)).
 
 Visual Studio will **reject** any retrieved source file if the exact checksum of that source file does not match the checksum stored in the package PDB, so it is imperative that the source code fetched by this proxy is a byte-for-byte copy of the code as it was seen _**during the creation of the NuGet package**_.
 
