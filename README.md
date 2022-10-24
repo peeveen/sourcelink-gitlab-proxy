@@ -17,15 +17,15 @@ This project is one such proxy webservice.
 
 ## Build
 
-1. Optionally modify `appsettings.yml` with your preferred settings (see 'Usage' section below).
-2. Optionally add an HTTPS certificate somewhere (see 'HTTPS' section below)
+1. _(Optional)_ Modify `appsettings.yml` with your preferred settings (see 'Usage' section below). If you don't do this, you will have to supply your configuration arguments via command line when you run the proxy.
+2. _(Optional)_ Add an HTTPS certificate somewhere (see 'HTTPS' section below). If you don't do this, you will only be able to use this proxy via HTTP.
 3. Run the build command (you can specify a different tag if you wish):
 
 ```
 docker build -t sourcelinkgitlabproxy .
 ```
 
-> You can optionally add `--build-arg version=n.n.n.n` to version stamp the built files, otherwise they will have a default version of 1.0.0.0.
+> You can add `--build-arg version=n.n.n.n` to set the version numbers in the built files, otherwise they will have a default version of 1.0.0.0.
 
 ## Testing
 
@@ -43,7 +43,7 @@ docker run -v ${PWD}/:/SourceLinkGitLabProxy mcr.microsoft.com/dotnet/sdk /bin/s
 
 ## Run
 
-Assuming you have kept the port numbers from the default config, and used the suggested tag, you can run your built image with this command (mapped port number can obviously be changed if you wish):
+Assuming you have kept the port numbers from the default config (5041 for HTTP and 5042 for HTTPS), and used the suggested tag, you can run your built image with this command (mapped port number can obviously be changed if you wish):
 
 ```
 docker run -dit -p 5041:5041 -p 5042:5042 sourcelinkgitlabproxy
