@@ -1,0 +1,65 @@
+# Your GitLab server
+GitLabHostOrigin: https://gitlab.yourdomain.com
+# A personal access token with which to perform all source code access.
+# Leave blank to use per-user OAuth-style access (a little slower,
+# but more secure). Note that using OAuth-style access requires the
+# proxy to be running as HTTPS, or behind an HTTPS reverse proxy.
+PersonalAccessToken:
+# The scope to request during OAuth access token requests.
+OAuthTokenRequestScope: api
+# How should line endings be modified during post-process?
+# Options are: Windows, Unix
+LineEndingType: Windows
+
+# Ports n stuff
+HttpServer:
+  Endpoints:
+    Http:
+      Host: sourcelinkgitlabproxy.hostname.here
+      Port: 5041
+      Scheme: http
+    Https:
+      Host: sourcelinkgitlabproxy.hostname.here
+      Port: 5042
+      Scheme: https
+
+      # Locate the cert: use ONE of the following ...
+
+      # Simple path: where's the cert file?
+      # By default this points to a self-signed certificate which WILL NOT WORK, but will suffice
+      # if you are only using this proxy via HTTP (either using a PersonalAccessToken, or hosting
+      # behind a reverse proxy that deals with HTTPS).
+      FilePath: ./certs/selfSigned.pfx
+      Password: yourPasswordHere
+
+      # .NET Core certificate stores: where's the cert stored?
+      # For Windows, this is the OS certificates store (available by launching "certlm" from the Start Menu).
+      # For Linux, these are inside a special folder created by .NET (~/.dotnet/corefx/cryptography/x509stores/)
+      # StoreLocation: LocalMachine
+      # StoreName: My
+
+Logging:
+  LogLevel:
+    Default: Information
+    Microsoft: Warning
+    Microsoft.Hosting.Lifetime: Information
+
+NLog:
+  throwConfigExceptions: true
+  targets:
+    async: true
+    logfile:
+      type: File
+      fileName: ./logs/nlog-${shortdate}.log
+    logconsole:
+      type: Console
+      layout: ${level:upperCase=true} ${message} |${exception:format=tostring}"
+  rules:
+    - logger: "*"
+      minLevel: Information
+      writeTo: logconsole
+    - logger: "*"
+      minLevel: Information
+      writeTo: logfile
+
+AllowedHosts: "*"

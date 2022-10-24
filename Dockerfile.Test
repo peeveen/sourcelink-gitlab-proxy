@@ -1,0 +1,4 @@
+FROM mcr.microsoft.com/dotnet/sdk AS build
+WORKDIR /SourceLinkGitLabProxy
+COPY . /SourceLinkGitLabProxy
+RUN dotnet test
