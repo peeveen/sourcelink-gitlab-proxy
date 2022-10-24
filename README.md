@@ -109,7 +109,7 @@ Otherwise, the proxy will perform a series of steps to obtain an access token.
 ## Git Credential Manager
 
 If Visual Studio gets a `401 Unauthorized` response from the proxy (which it will if your are using OAuth-style access), it will
-automatically prompt you for the credentials to access GitLab with.
+attempt to get access credentials from _Git Credential Manager_. If it doesn't find any, it should then automatically prompt you for the credentials to access GitLab with.
 
 If you want, you can authorize beforehand, from a command line, like this:
 
