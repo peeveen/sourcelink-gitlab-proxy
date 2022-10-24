@@ -4,11 +4,11 @@ using Microsoft.Net.Http.Headers;
 namespace SourceLinkGitLabProxy;
 
 public class AuthorizationInfo {
-	public static readonly string GitLabPrivateTokenHeaderName = "PRIVATE-TOKEN";
+	public const string GitLabPrivateTokenHeaderName = "PRIVATE-TOKEN";
 
 	// Cached OAuth tokens. Prevents us having to make an OAuth request for every request that this proxy receives.
-	// OAuth tokens are cached per user.
-	private static readonly IDictionary<string, GitLabOAuthTokens> _accessTokens = new ConcurrentDictionary<string, GitLabOAuthTokens>();
+	// OAuth tokens are cached by user name.
+	static readonly IDictionary<string, GitLabOAuthTokens> _accessTokens = new ConcurrentDictionary<string, GitLabOAuthTokens>();
 
 	private AuthorizationInfo() { }
 

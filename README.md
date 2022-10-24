@@ -2,10 +2,7 @@
 
 [Source Link](https://github.com/dotnet/sourcelink) is a technology promoted by Microsoft to allow dynamic retrieval of code from a repository when debugging. The repository URL is encoded into the PDB, and, during debugging, when the time comes to step into the code from that repository, the IDE will fetch the appropriate version of the source code from that repository, and seamlessly step into it.
 
-The Source Link technology relies on accessing raw source code from a repository using [Basic Authentication](https://en.wikipedia.org/wiki/Basic_access_authentication) over HTTPS. This is
-supported by [GitHub](https://github.com/), [BitBucket](https://bitbucket.org/), and several other online repository providers ...
-[but not private GitLab servers](https://gitlab.com/gitlab-org/gitlab/-/issues/19189), which instead expect any such access to be done via the GitLab
-[API](https://docs.gitlab.com/ee/api/repository_files.html), a process that is unfortunately not directly compatible with Source Link.
+The Source Link technology relies on accessing raw source code from a repository using [Basic Authentication](https://en.wikipedia.org/wiki/Basic_access_authentication) over HTTPS. This is supported by [GitHub](https://github.com/), [BitBucket](https://bitbucket.org/), and several other online repository providers ... [but not private GitLab servers](https://gitlab.com/gitlab-org/gitlab/-/issues/19189), which instead expect any such access to be done via the GitLab [API](https://docs.gitlab.com/ee/api/repository_files.html), a process that is unfortunately not directly compatible with Source Link.
 
 There is a workaround. Using the `SourceLinkGitLabHost` element in the project file of the code that is being published to a NuGet feed, we can override the URL that Source Link makes requests to, pointing it to a proxy webservice instead:
 
@@ -18,8 +15,8 @@ This project is one such proxy webservice.
 ## Build
 
 1. _(Optional)_ Modify `appsettings.yml` with your preferred settings (see 'Usage' section below). If you don't do this, you will have to supply your configuration arguments via command line when you run the proxy.
-2. _(Optional)_ Add an HTTPS certificate somewhere (see 'HTTPS' section below). If you don't do this, you will only be able to use this proxy via HTTP.
-3. Run the build command (you can specify a different tag if you wish):
+2. _(Optional)_ Add an HTTPS certificate somewhere (see 'HTTPS' section below). If you don't do this, you will only be able to use this proxy via HTTP, or with a static personal access token.
+3. Run the build command (you can specify a different image tag if you wish):
 
 ```
 docker build -t sourcelinkgitlabproxy .
@@ -27,7 +24,7 @@ docker build -t sourcelinkgitlabproxy .
 
 > You can add `--build-arg version=n.n.n.n` to set the version numbers in the built files, otherwise they will have a default version of 1.0.0.0.
 
-## Testing
+## Running the unit tests
 
 If you have the .NET SDK installed:
 
@@ -43,10 +40,10 @@ docker run -v ${PWD}/:/SourceLinkGitLabProxy mcr.microsoft.com/dotnet/sdk /bin/s
 
 ## Run
 
-Assuming you have kept the port numbers from the default config (5041 for HTTP and 5042 for HTTPS), and used the suggested tag, you can run your built image with this command (mapped port number can obviously be changed if you wish):
+Assuming you have used the suggested tag, you can run your built image with this command (mapped port numbers can obviously be changed if you wish):
 
 ```
-docker run -dit -p 5041:5041 -p 5042:5042 sourcelinkgitlabproxy
+docker run -dit -p 5041:80 -p 5042:443 sourcelinkgitlabproxy
 ```
 
 > See the upcoming 'Usage' section for available arguments.
@@ -126,13 +123,18 @@ password=your-GITLAB-password-here
 
 ## Line Endings
 
-Much like how _Git for Windows_ has a _Checkout Windows-style, commit Unix-style line endings_ feature, this proxy can do a similar thing, and this is controlled by the `LineEndingChange` argument. If the exact checksum of the source file provided via Source Link does not match the checksum stored in the package PDB, Visual Studio will reject it for not matching the original source code, so it is imperative that the source code fetched by this proxy is a byte-for-byte copy of the code as it was _**during the creation of the NuGet package**_.
+_Git for Windows_ has a '_Checkout Windows-style, commit Unix-style line endings_' feature, controlled by the `autocrlf` variable. This feature is **bad news** for Source Link.
 
-> If your NuGet packages are created on a Linux build server, you probably don't need to worry about this.
+Visual Studio will **reject** any retrieved source file if the exact checksum of that source file does not match the checksum stored in the package PDB, so it is imperative that the source code fetched by this proxy is a byte-for-byte copy of the code as it was seen _**during the creation of the NuGet package**_.
+
+This means that, if you published a NuGet package from a Windows environment (where the code was checked-out with CRLF line-endings), but Source Link provides the code for the package _directly from the Git repository_ (where the code will have Unix-style LF line-endings), then there will be a mismatch.
+
+You can use the `LineEndingType` argument to make the proxy attempt a line-ending replacement on any fetched source content. For the proxy to perform such a string modification, it has to try to figure out the file encoding so that it can decode the content, perform the substitutions, then re-encode that modified content using the original encoding type. For now, only UTF-8/16/32 encodings are supported, and if a source file has no byte-order-mark, it
+is assumed to be UTF-8.
 
 ## TODO
 
 - Make use of the refresh token that is returned with the access token, and/or try to determine expiry times of access tokens (though [this page](https://forum.gitlab.com/t/missing-expires-in-in-the-token-response/1232) suggests that they _never expire!_ 😮)
-- Better text translation. Currently it expects all source files to be returned as UTF8 or UTF8-BOM. Not sure if other encodings will ever be received.
+- Support more encodings for the `LineEndingChange` functionality.
 - Slightly better error handling during access token generation.
-- Change build to self contained, running on a minimal Linux image.
+- Change build to `--self-contained`, running on a minimal Linux image.

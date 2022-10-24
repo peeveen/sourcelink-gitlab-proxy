@@ -1,5 +1,5 @@
-using System.Reflection;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
@@ -10,11 +10,11 @@ namespace SourceLinkGitLabProxy.Controllers;
 [Controller]
 [Route("/")]
 public class GitLabController : Controller {
-	private static readonly string ProjectPathGroupName = "projectPath";
-	private static readonly string CommitHashGroupName = "commitHash";
-	private static readonly string FilePathGroupName = "filePath";
-	private static readonly string SourceLinkURLRegexPattern = @$"^\/(?<{ProjectPathGroupName}>.*)\/raw\/(?<{CommitHashGroupName}>[0-9A-Fa-f]*)\/(?<{FilePathGroupName}>.*)$";
-	private static readonly Regex SourceLinkURLRegex = new Regex(SourceLinkURLRegexPattern);
+	const string ProjectPathGroupName = "projectPath";
+	const string CommitHashGroupName = "commitHash";
+	const string FilePathGroupName = "filePath";
+	const string SourceLinkURLRegexPattern = @$"^\/(?<{ProjectPathGroupName}>.*)\/raw\/(?<{CommitHashGroupName}>[0-9A-Fa-f]*)\/(?<{FilePathGroupName}>.*)$";
+	static readonly Regex SourceLinkURLRegex = new Regex(SourceLinkURLRegexPattern);
 
 	IGitLabClient _gitLabClient;
 	ILogger _logger;
@@ -40,13 +40,26 @@ public class GitLabController : Controller {
 		return new GitLabSourceFileRequest(projectPath, filePath, commitHash);
 	}
 
+	private async Task<HttpContent> PostProcessContent(HttpContent content) {
+		if (_configuration.LineEndingChange != LineEndingChange.None) {
+			_logger.LogInformation($"Replacing line endings with {_configuration.LineEndingChange}-style line endings.");
+			var bytes = await content.ReadAsByteArrayAsync();
+			var (encoding, stringContent) = EncodingUtils.GetFileContentAsString(bytes);
+			stringContent = stringContent.ReplaceLineEndings(_configuration.LineEndingChange == LineEndingChange.Windows ? "\r\n" : "\n");
+			bytes = EncodingUtils.GetFileContentForString(encoding, stringContent);
+			content.Dispose();
+			content = new ByteArrayContent(bytes);
+		}
+		return content;
+	}
+
 	[HttpGet]
 	[Route("/version")]
 	public string GetVersion() => Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown";
 
 	[HttpGet]
 	[Route("{*queryvalues}")]
-	public async Task<string> GetSource() {
+	public async Task GetSource() {
 		static string decodeAuthHeader(string? authHeader) => Encoding.UTF8.GetString(Convert.FromBase64String(authHeader?.Replace("Basic ", string.Empty) ?? string.Empty));
 		Request.Headers.TryGetValue(HeaderNames.Authorization, out var authHeaders);
 		var authInfo = !string.IsNullOrEmpty(_configuration.PersonalAccessToken) ?
@@ -58,23 +71,15 @@ public class GitLabController : Controller {
 		if (!authInfo.CanAttemptAuthorization) {
 			_logger.LogInformation("There is insufficient authorization information to perform a source code fetch. Returning 401 status.");
 			Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-			return string.Empty;
-		}
-
-		var sourceLinkRecord = ParseURL(Request.Path);
-		_logger.LogInformation($"Received Source Link request: {sourceLinkRecord.ToString()}");
-		using var response = await _gitLabClient.GetSourceAsync(sourceLinkRecord, authInfo);
-		if (!response.IsSuccessStatusCode) {
+		} else {
+			var sourceLinkRecord = ParseURL(Request.Path);
+			_logger.LogInformation($"Received Source Link request: {sourceLinkRecord.ToString()}");
+			using var response = await _gitLabClient.GetSourceAsync(sourceLinkRecord, authInfo);
 			Response.StatusCode = (int)response.StatusCode;
-			return await response.Content.ReadAsStringAsync();
+			using var content = await PostProcessContent(response.Content);
+			using var inStream = await content.ReadAsStreamAsync();
+			using var outStream = Response.BodyWriter.AsStream();
+			await inStream.CopyToAsync(outStream);
 		}
-		using var content = response.Content;
-		var bytes = await content.ReadAsByteArrayAsync();
-
-		var hasBOM = bytes.Length > 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
-		var stringContent = new UTF8Encoding(hasBOM).GetString(bytes);
-		if (_configuration.LineEndingChange != LineEndingChange.None)
-			stringContent = stringContent.ReplaceLineEndings(_configuration.LineEndingChange == LineEndingChange.Windows ? "\r\n" : "\n");
-		return stringContent;
 	}
 }

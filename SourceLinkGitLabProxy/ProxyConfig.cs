@@ -2,10 +2,10 @@ namespace SourceLinkGitLabProxy;
 
 // Configuration object, holds the values of arguments supplied on the command line.
 public class ProxyConfig : IProxyConfig {
-	public static readonly string PersonalAccessTokenArgumentName = "PersonalAccessToken";
-	public static readonly string GitLabHostOriginArgumentName = "GitLabHostOrigin";
-	public static readonly string LineEndingChangeArgumentName = "LineEndingChange";
-	public static readonly string OAuthTokenRequestScopeArgumentName = "OAuthTokenRequestScope";
+	public const string PersonalAccessTokenArgumentName = "PersonalAccessToken";
+	public const string GitLabHostOriginArgumentName = "GitLabHostOrigin";
+	public const string LineEndingChangeArgumentName = "LineEndingChange";
+	public const string OAuthTokenRequestScopeArgumentName = "OAuthTokenRequestScope";
 
 	internal ProxyConfig(IConfiguration configuration) {
 		static void validateArgument(string name, string value) {
@@ -17,7 +17,7 @@ public class ProxyConfig : IProxyConfig {
 		GitLabHostOrigin = getArgument(GitLabHostOriginArgumentName);
 		PersonalAccessToken = getArgument(PersonalAccessTokenArgumentName);
 		OAuthTokenRequestScope = getArgument(OAuthTokenRequestScopeArgumentName, "api");
-		LineEndingChange = Enum.Parse<LineEndingChange>(getArgument(LineEndingChangeArgumentName, nameof(LineEndingChange.Windows)));
+		LineEndingChange = Enum.Parse<LineEndingChange>(getArgument(LineEndingChangeArgumentName, nameof(LineEndingChange.None)));
 		validateArgument(nameof(GitLabHostOrigin), GitLabHostOrigin);
 	}
 

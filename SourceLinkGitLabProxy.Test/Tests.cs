@@ -15,11 +15,11 @@ namespace SourceLinkGitLabProxy.Test;
 [TestClass]
 public class Tests {
 	// Run a fake "GitLab" server locally, at this URL.
-	private static readonly int FakeGitLabPort = 6626;
-	private static readonly string FakeGitLabURL = $"http://localhost:{FakeGitLabPort}";
+	const int FakeGitLabPort = 6626;
+	static readonly string FakeGitLabURL = $"http://localhost:{FakeGitLabPort}";
 
 	// Simple Basic Authentication token calculator.
-	private static string CreateBasicAuthenticationToken(string username, string password) => $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"))}";
+	static string CreateBasicAuthenticationToken(string username, string password) => $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"))}";
 
 	// Our fake GitLab instance.
 	internal class FakeGitLab {
@@ -38,8 +38,12 @@ public class Tests {
 		internal static readonly string KnownPersonalAccessToken = "PalyarCommander'sBrotherInLaw";
 
 		// Some fake source code to return.
-		internal static readonly string UnixFakeSourceFile = "10 PRINT \"STEVEN IS COOL\"\n20 GOTO 10";
-		internal static readonly string WindowsFakeSourceFile = UnixFakeSourceFile.ReplaceLineEndings("\r\n");
+		internal static readonly string FakeSourceFile = "10 PRINT \"STEVEN IS COOL\"\n20 GOTO 10";
+		internal static readonly string WindowsFakeSourceFile = FakeSourceFile.ReplaceLineEndings("\r\n");
+
+		static IDictionary<string, byte[]> CreateEncodedSourceDictionary(string sourceFile) => EncodingUtils.Encodings.ToDictionary(encoding => encoding.Key, encoding => Enumerable.Concat(encoding.Value.GetPreamble(), encoding.Value.GetBytes(sourceFile)).ToArray());
+		internal static readonly IDictionary<string, byte[]> EncodedSourceFiles = CreateEncodedSourceDictionary(FakeSourceFile);
+		internal static readonly IDictionary<string, byte[]> WindowsEncodedSourceFiles = CreateEncodedSourceDictionary(WindowsFakeSourceFile);
 
 		// A cancellation token to stop the fake server.
 		private CancellationTokenSource CancelToken { get; } = new CancellationTokenSource();
@@ -79,9 +83,13 @@ public class Tests {
 
 		// Responds to the /api/v4/projects/... endpoint, by returning some source code.
 		async Task getSourceCode(HttpRequest request, HttpResponse response, string requestJson) {
-			if (IsAuthorized(request))
-				await response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(UnixFakeSourceFile));
-			else
+			if (IsAuthorized(request)) {
+				var pathParts = request.Path.ToString().Split(new[] { "/", "%2f", "%2F" }, StringSplitOptions.RemoveEmptyEntries);
+				// Last part of path will be constant string "raw". Second-last part will be our encoding.
+				var encodingUriPart = pathParts[^2];
+				var encodingRequested = EncodedSourceFiles.ContainsKey(encodingUriPart) ? encodingUriPart : Encoding.UTF8.WebName;
+				await response.BodyWriter.WriteAsync(EncodedSourceFiles[encodingRequested]);
+			} else
 				response.StatusCode = (int)HttpStatusCode.Unauthorized;
 		}
 
@@ -157,42 +165,52 @@ public class Tests {
 		Assert.AreEqual(filePath, parseResult.filePath);
 	}
 
-	private async Task ValidateSourceCodeResponse(HttpResponseMessage response, string expectedSourceCodeResult) {
+	private static async Task ValidateSourceCodeResponse(HttpResponseMessage response, string expectedEncoding, bool windowsLineEndings = false) {
 		response.EnsureSuccessStatusCode();
 		using var content = response.Content;
-		var responseBody = await content.ReadAsStringAsync();
-		Assert.AreEqual(expectedSourceCodeResult, responseBody);
+		var bytes = await content.ReadAsByteArrayAsync();
+		Assert.IsTrue(bytes.SequenceEqual((windowsLineEndings ? FakeGitLab.WindowsEncodedSourceFiles : FakeGitLab.EncodedSourceFiles)[expectedEncoding]));
 	}
 
-	private async Task TestGetSource(HttpClient client, Func<HttpResponseMessage, Task> responseValidator, Action<HttpRequestMessage>? requestDecorator = null) {
+	private async Task TestGetSource(HttpClient client, Func<HttpResponseMessage, Task> responseValidator, params Action<HttpClient, HttpRequestMessage>[] requestDecorators) {
 		// This exact path doesn't matter, so long as it's in the correct "form".
-		using var request = new HttpRequestMessage(HttpMethod.Get, "/path/to/my/project/raw/342923974a8678d8787e87f78b8c/path/to/my/file");
-		requestDecorator?.Invoke(request);
+		using var request = new HttpRequestMessage(HttpMethod.Get, "/path/to/my/project/raw/342923974a8678d8787e87f78b8c/path/to/my/file/");
+		foreach (var requestDecorator in requestDecorators)
+			requestDecorator.Invoke(client, request);
 		using var response = await client.SendAsync(request);
 		await responseValidator(response);
 	}
 
-	private async Task TestGetSource(HttpClient client, Action<HttpResponseMessage> responseValidator, Action<HttpRequestMessage>? requestDecorator = null) {
-		await TestGetSource(client, async (resp) => await Task.Run(() => responseValidator(resp)), requestDecorator);
+	private async Task TestGetSource(HttpClient client, Action<HttpResponseMessage> responseValidator, params Action<HttpClient, HttpRequestMessage>[] requestDecorators) =>
+		await TestGetSource(client, async (resp) => await Task.Run(() => responseValidator(resp)), requestDecorators);
+
+	private static Func<HttpResponseMessage, Task> GetSourceCodeValidator(string? expectedEncoding = null, bool windowsLineEndings = false) => async (resp) => await ValidateSourceCodeResponse(resp, expectedEncoding ?? Encoding.UTF8.WebName, windowsLineEndings);
+	private static Func<HttpResponseMessage, Task> GetWindowsSourceCodeValidator(string? expectedEncoding = null) => GetSourceCodeValidator(expectedEncoding, true);
+	private static Func<HttpResponseMessage, Task> GetUnixSourceCodeValidator(string? expectedEncoding = null) => GetSourceCodeValidator(expectedEncoding);
+
+	private void AddBasicAuthenticationHeader(HttpClient client, HttpRequestMessage req) => req.Headers.Add(HeaderNames.Authorization, CreateBasicAuthenticationToken(FakeGitLab.TestUserName, FakeGitLab.TestUserPassword));
+
+	private Action<HttpClient, HttpRequestMessage> GetEncodingQueryParameterDecorator(string encodingName) => (client, request) =>
+		request.RequestUri = new Uri(new Uri(client.BaseAddress!, request.RequestUri?.OriginalString), encodingName);
+
+	private async Task TestForAllEncodings(Func<string, Encoding, Task> testFunc) {
+		foreach (var encoding in EncodingUtils.Encodings)
+			await testFunc(encoding.Key, encoding.Value);
 	}
 
-	private Func<HttpResponseMessage, Task> GetSourceCodeValidator(string expectedCode) => async (resp) => await ValidateSourceCodeResponse(resp, expectedCode);
-
-	private void AddBasicAuthenticationHeader(HttpRequestMessage req) => req.Headers.Add(HeaderNames.Authorization, CreateBasicAuthenticationToken(FakeGitLab.TestUserName, FakeGitLab.TestUserPassword));
+	public async Task TestGetSourceForAllEncodings(bool windows = false) {
+		await WithClientAsync(async (client, fakeGitLab) =>
+			await TestForAllEncodings(async (encodingName, encoding) =>
+				await TestGetSource(client, windows ? GetWindowsSourceCodeValidator(encodingName) : GetUnixSourceCodeValidator(encodingName), GetEncodingQueryParameterDecorator(encodingName))
+			)
+		, $"--{ProxyConfig.GitLabHostOriginArgumentName}={FakeGitLabURL}", $"--{ProxyConfig.PersonalAccessTokenArgumentName}={FakeGitLab.KnownPersonalAccessToken}", windows ? $"--{ProxyConfig.LineEndingChangeArgumentName}={LineEndingChange.Windows}" : string.Empty);
+	}
 
 	[TestMethod]
-	public async Task TestGetSourceWindows() {
-		await WithClientAsync(async (client, fakeGitLab) => {
-			await TestGetSource(client, GetSourceCodeValidator(FakeGitLab.WindowsFakeSourceFile));
-		}, $"--{ProxyConfig.GitLabHostOriginArgumentName}={FakeGitLabURL}", $"--{ProxyConfig.PersonalAccessTokenArgumentName}={FakeGitLab.KnownPersonalAccessToken}");
-	}
+	public async Task TestGetSourceWindows() => await TestGetSourceForAllEncodings(true);
 
 	[TestMethod]
-	public async Task TestGetSourceUnix() {
-		await WithClientAsync(async (client, fakeGitLab) => {
-			await TestGetSource(client, GetSourceCodeValidator(FakeGitLab.UnixFakeSourceFile));
-		}, $"--{ProxyConfig.GitLabHostOriginArgumentName}={FakeGitLabURL}", $"--{ProxyConfig.PersonalAccessTokenArgumentName}={FakeGitLab.KnownPersonalAccessToken}", $"--{ProxyConfig.LineEndingChangeArgumentName}={LineEndingChange.Unix}");
-	}
+	public async Task TestGetSourceUnix() => await TestGetSourceForAllEncodings();
 
 	[TestMethod]
 	public async Task TestGetSourceWithBadPersonalAccessToken() {
@@ -204,7 +222,7 @@ public class Tests {
 	[TestMethod]
 	public async Task TestGetSourceWithOAuth() {
 		await WithClientAsync(async (client, fakeGitLab) => {
-			await TestGetSource(client, GetSourceCodeValidator(FakeGitLab.WindowsFakeSourceFile), AddBasicAuthenticationHeader);
+			await TestGetSource(client, GetSourceCodeValidator(), AddBasicAuthenticationHeader);
 			Assert.AreEqual(1, fakeGitLab.IssuedOAuthTokens.Count());
 		}, $"--{ProxyConfig.GitLabHostOriginArgumentName}={FakeGitLabURL}");
 	}
@@ -212,11 +230,11 @@ public class Tests {
 	[TestMethod]
 	public async Task TestGetSourceWithOAuthAfterRevokingAccessToken() {
 		await WithClientAsync(async (client, fakeGitLab) => {
-			await TestGetSource(client, GetSourceCodeValidator(FakeGitLab.WindowsFakeSourceFile), AddBasicAuthenticationHeader);
+			await TestGetSource(client, GetSourceCodeValidator(), AddBasicAuthenticationHeader);
 			// Revoke the issued OAuth token.
 			Assert.AreEqual(1, fakeGitLab.IssuedOAuthTokens.Count());
 			fakeGitLab.RevokeOAuthToken(fakeGitLab.IssuedOAuthTokens.First());
-			await TestGetSource(client, GetSourceCodeValidator(FakeGitLab.WindowsFakeSourceFile), AddBasicAuthenticationHeader);
+			await TestGetSource(client, GetSourceCodeValidator(), AddBasicAuthenticationHeader);
 			// We should be onto the second OAuth token now.
 			Assert.AreEqual(2, fakeGitLab.OAuthTokenCounter);
 			Assert.AreEqual(fakeGitLab.KnownOAuthTokens[1], fakeGitLab.IssuedOAuthTokens[0]);
@@ -226,7 +244,7 @@ public class Tests {
 	[TestMethod]
 	public async Task TestGetSourceWithBadOAuthCredentials() {
 		await WithClientAsync(async (client, fakeGitLab) => {
-			await TestGetSource(client, (resp) => Assert.AreEqual(HttpStatusCode.Unauthorized, resp.StatusCode), (req) => req.Headers.Add(HeaderNames.Authorization, CreateBasicAuthenticationToken("PaulWoakes", "Electromagnet")));
+			await TestGetSource(client, (resp) => Assert.AreEqual(HttpStatusCode.Unauthorized, resp.StatusCode), (client, req) => req.Headers.Add(HeaderNames.Authorization, CreateBasicAuthenticationToken("PaulWoakes", "Electromagnet")));
 		}, $"--{ProxyConfig.GitLabHostOriginArgumentName}={FakeGitLabURL}");
 	}
 }

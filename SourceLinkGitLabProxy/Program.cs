@@ -1,12 +1,12 @@
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
-using NLog.Extensions.Logging;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using NLog.Extensions.Logging;
 
 namespace SourceLinkGitLabProxy;
 
 public class Program {
-	private static readonly string AppSettingsFilenameBase = "appsettings";
+	const string AppSettingsFilenameBase = "appsettings";
 
 	public static void Main(string[] args) {
 		CreateHostBuilder(args)
@@ -24,8 +24,8 @@ public class Program {
 			.ConfigureLogging(loggingBuilder => loggingBuilder.AddNLog())
 			.ConfigureWebHostDefaults(webBuilder => {
 				webBuilder
-						.UseKestrel(options => options.ConfigureEndpoints())
-						.UseStartup<Startup>();
+					.UseKestrel(options => options.ConfigureEndpoints())
+					.UseStartup<Startup>();
 			});
 }
 
@@ -47,9 +47,9 @@ public static class KestrelServerOptionsExtensions {
 
 		foreach (var endpoint in endpoints.Values) {
 			var config = endpoint;
-			var port = config.Port ?? (config.Scheme == "https" ? 443 : 80);
+			var port = config.Port ?? (config.Scheme == EndpointConfiguration.HttpsScheme ? 443 : 80);
 			static IReadOnlyCollection<IPAddress> getIPAddresses(string host) {
-				if (host == "localhost")
+				if (host == EndpointConfiguration.LocalHost)
 					return new[] { IPAddress.IPv6Loopback, IPAddress.Loopback };
 				else if (IPAddress.TryParse(host, out var address))
 					return new[] { address };
@@ -85,11 +85,15 @@ public static class KestrelServerOptionsExtensions {
 }
 
 public class EndpointConfiguration {
-	public string Host { get; set; } = string.Empty;
+	public const string LocalHost = "localhost";
+	public const string HttpScheme = "http";
+	public const string HttpsScheme = "https";
+
+	public string Host { get; set; } = LocalHost;
 	public int? Port { get; set; }
-	public string Scheme { get; set; } = string.Empty;
-	public string StoreName { get; set; } = string.Empty;
-	public string StoreLocation { get; set; } = string.Empty;
-	public string FilePath { get; set; } = string.Empty;
-	public string Password { get; set; } = string.Empty;
+	public string Scheme { get; set; } = HttpScheme;
+	public string? StoreName { get; set; }
+	public string? StoreLocation { get; set; }
+	public string? FilePath { get; set; }
+	public string? Password { get; set; }
 }
