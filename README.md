@@ -98,23 +98,31 @@ Otherwise, the proxy will perform a series of steps to obtain an access token.
 
 1. If a request is received without a Basic Authentication header (i.e. `Authorization: Basic base64encodedUsernameAndPassword`) then the proxy will return a `401 Unauthorized` result.
 2. This will prompt Visual Studio to retry the request, this time _with_ an `Authorization` header containing credentials that it obtains from the _Git Credential Manager_.
-   > ⚠️ Visual Studio will **only** send an `Authorization` header to an **HTTPS** URL.
 
-> Beforehand, from a command line, you should tell _Git Credential Manager_ to store your GitLab credentials against the URL of **this proxy**, e.g.
->
-> ```
-> > git credential-manager-core store
-> protocol=https
-> host=your-PROXY-host-here_no-port
-> username=your-GITLAB-username-here
-> password=your-GITLAB-password-here
-> ^Z
-> ```
+   > ⚠️ Visual Studio will **only** send an `Authorization` header to an **HTTPS** URL.
 
 3. When the proxy receives this new request, it will call the [`/oauth/token` endpoint](https://docs.gitlab.com/ee/api/oauth2.html#resource-owner-password-credentials-flow) on your GitLab server to request an access token with `api` scope, passing the username and password that were provided in the `Authorization` header.
    - For some reason, a `read_repository`-scoped access token generated in this manner will not work.
 4. If an access token is returned, this token is used to access the GitLab API to fetch the source code.
    - The token is cached, and any future requests from that user will try to use the cached access token. If a request with a cached access token fails, the proxy will generate a new access token (as described in step 3) then retry the request.
+
+## Git Credential Manager
+
+If Visual Studio gets a `401 Unauthorized` response from the proxy (which it will if your are using OAuth-style access), it will
+automatically prompt you for the credentials to access GitLab with.
+
+If you want, you can authorize beforehand, from a command line, like this:
+
+```
+> git credential-manager-core store
+protocol=https
+host=your-PROXY-host-and-port-here
+username=your-GITLAB-username-here
+password=your-GITLAB-password-here
+^Z
+```
+
+> Use Ctrl+Z to end the input, and press Return.
 
 ## Line Endings
 
