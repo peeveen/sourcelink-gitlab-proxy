@@ -8,8 +8,8 @@ PersonalAccessToken:
 # The scope to request during OAuth access token requests.
 OAuthTokenRequestScope: api
 # How should line endings be modified during post-process?
-# Options are: Windows, Unix
-LineEndingType: Windows
+# Options are: Windows, Unix, None
+LineEndingType: None
 
 # Ports n stuff
 HttpServer:
