@@ -85,7 +85,7 @@ Otherwise you will need to set some properties in the `HttpServer:Endpoints:Http
 
 > ⚠️ The default `appsettings.yml` points to a self-signed certificate which _will not work_, but will suffice if you only using this proxy via HTTP.
 
-> Read more about certificates in the [separate README file in the `certs` folder](./SourceLinkGitLabProxy/certs/README.md).
+> Read more about certificates in the [separate README file in the `certs` folder](./SourceLinkGitLabProxy/certs/).
 
 ## Security
 
