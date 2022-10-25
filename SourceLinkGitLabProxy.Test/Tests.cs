@@ -40,8 +40,9 @@ public class Tests {
 		// Some fake source code to return.
 		internal static readonly string FakeSourceFile = "10 PRINT \"STEVEN IS COOL\"\n20 GOTO 10";
 		internal static readonly string WindowsFakeSourceFile = FakeSourceFile.ReplaceLineEndings("\r\n");
+		static byte[] GetEncodedSourceFile(string sourceFile, Encoding encoding) => Enumerable.Concat(encoding.GetPreamble(), encoding.GetBytes(sourceFile)).ToArray();
 
-		static IDictionary<string, byte[]> CreateEncodedSourceDictionary(string sourceFile) => EncodingUtils.Encodings.ToDictionary(encoding => encoding.WebName, encoding => Enumerable.Concat(encoding.GetPreamble(), encoding.GetBytes(sourceFile)).ToArray());
+		static IDictionary<string, byte[]> CreateEncodedSourceDictionary(string sourceFile) => EncodingUtils.Encodings.ToDictionary(encoding => encoding.WebName, encoding => GetEncodedSourceFile(sourceFile, encoding));
 		internal static readonly IDictionary<string, byte[]> EncodedSourceFiles = CreateEncodedSourceDictionary(FakeSourceFile);
 		internal static readonly IDictionary<string, byte[]> WindowsEncodedSourceFiles = CreateEncodedSourceDictionary(WindowsFakeSourceFile);
 
@@ -188,7 +189,7 @@ public class Tests {
 	private static Func<HttpResponseMessage, Task> GetWindowsSourceCodeValidator(string? expectedEncoding = null) => GetSourceCodeValidator(FakeGitLab.WindowsEncodedSourceFiles, expectedEncoding);
 	private static Func<HttpResponseMessage, Task> GetUnixSourceCodeValidator(string? expectedEncoding = null) => GetSourceCodeValidator(FakeGitLab.EncodedSourceFiles, expectedEncoding);
 
-	private void AddBasicAuthenticationHeader(HttpClient client, HttpRequestMessage req) => req.Headers.Add(HeaderNames.Authorization, CreateBasicAuthenticationToken(FakeGitLab.TestUserName, FakeGitLab.TestUserPassword));
+	private void AddValidBasicAuthenticationHeader(HttpClient client, HttpRequestMessage req) => req.Headers.Add(HeaderNames.Authorization, CreateBasicAuthenticationToken(FakeGitLab.TestUserName, FakeGitLab.TestUserPassword));
 
 	private Action<HttpClient, HttpRequestMessage> GetEncodingQueryParameterDecorator(string encodingName) => (client, request) =>
 		request.RequestUri = new Uri(new Uri(client.BaseAddress!, request.RequestUri?.OriginalString), encodingName);
@@ -223,7 +224,7 @@ public class Tests {
 	[TestMethod]
 	public async Task TestGetSourceWithOAuth() {
 		await WithClientAsync(async (client, fakeGitLab) => {
-			await TestGetSource(client, GetUnixSourceCodeValidator(), AddBasicAuthenticationHeader);
+			await TestGetSource(client, GetUnixSourceCodeValidator(), AddValidBasicAuthenticationHeader);
 			Assert.AreEqual(1, fakeGitLab.IssuedOAuthTokens.Count());
 		}, $"--{ProxyConfig.GitLabHostOriginArgumentName}={FakeGitLabURL}");
 	}
@@ -231,11 +232,11 @@ public class Tests {
 	[TestMethod]
 	public async Task TestGetSourceWithOAuthAfterRevokingAccessToken() {
 		await WithClientAsync(async (client, fakeGitLab) => {
-			await TestGetSource(client, GetUnixSourceCodeValidator(), AddBasicAuthenticationHeader);
+			await TestGetSource(client, GetUnixSourceCodeValidator(), AddValidBasicAuthenticationHeader);
 			// Revoke the issued OAuth token.
 			Assert.AreEqual(1, fakeGitLab.IssuedOAuthTokens.Count());
 			fakeGitLab.RevokeOAuthToken(fakeGitLab.IssuedOAuthTokens.First());
-			await TestGetSource(client, GetUnixSourceCodeValidator(), AddBasicAuthenticationHeader);
+			await TestGetSource(client, GetUnixSourceCodeValidator(), AddValidBasicAuthenticationHeader);
 			// We should be onto the second OAuth token now.
 			Assert.AreEqual(2, fakeGitLab.OAuthTokenCounter);
 			Assert.AreEqual(fakeGitLab.KnownOAuthTokens[1], fakeGitLab.IssuedOAuthTokens[0]);
