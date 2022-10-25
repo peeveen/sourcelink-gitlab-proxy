@@ -34,11 +34,11 @@ public class AuthorizationInfo {
 
 	// Resets the current OAuth tokens if they came from the cache, and also
 	// removes them from the cache.
-	public static AuthorizationInfo InvalidateCachedOAuthTokens(AuthorizationInfo authInfo) {
-		if (!authInfo.OAuthTokensCameFromCache)
-			return authInfo;
-		_accessTokens.Remove(authInfo.BasicAuthenticationHeaderUser);
-		return new AuthorizationInfo(authInfo) {
+	public AuthorizationInfo InvalidateCachedOAuthTokens() {
+		if (!OAuthTokensCameFromCache)
+			return this;
+		_accessTokens.Remove(BasicAuthenticationHeaderUser);
+		return new AuthorizationInfo(this) {
 			OAuthTokens = new GitLabOAuthTokens(),
 			OAuthTokensCameFromCache = false
 		};
@@ -58,6 +58,8 @@ public class AuthorizationInfo {
 		init {
 			var authParts = value.Split(':');
 			BasicAuthenticationHeaderUser = authParts.First();
+			// First colon is a guaranteed username:password separator.
+			// Any further colons will be part of the password.
 			BasicAuthenticationHeaderPassword = string.Join(string.Empty, authParts[1..]);
 			if (OAuthTokensCameFromCache = _accessTokens.TryGetValue(BasicAuthenticationHeaderUser, out var accessTokens))
 				this.OAuthTokens = accessTokens;

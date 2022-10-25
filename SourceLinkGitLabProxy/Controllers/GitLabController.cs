@@ -45,6 +45,7 @@ public class GitLabController : Controller {
 			_logger.LogInformation($"Replacing line endings with {_configuration.LineEndingChange}-style line endings.");
 			var bytes = await content.ReadAsByteArrayAsync();
 			var (encoding, stringContent) = EncodingUtils.GetFileContentAsString(bytes);
+			_logger.LogInformation($"File content is believed to be {encoding.WebName}.");
 			stringContent = stringContent.ReplaceLineEndings(_configuration.LineEndingChange == LineEndingChange.Windows ? "\r\n" : "\n");
 			bytes = EncodingUtils.GetFileContentForString(encoding, stringContent);
 			content.Dispose();
