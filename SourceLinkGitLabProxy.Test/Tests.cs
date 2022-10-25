@@ -41,7 +41,7 @@ public class Tests {
 		internal static readonly string FakeSourceFile = "10 PRINT \"STEVEN IS COOL\"\n20 GOTO 10";
 		internal static readonly string WindowsFakeSourceFile = FakeSourceFile.ReplaceLineEndings("\r\n");
 
-		static IDictionary<string, byte[]> CreateEncodedSourceDictionary(string sourceFile) => EncodingUtils.Encodings.ToDictionary(encoding => encoding.Key, encoding => Enumerable.Concat(encoding.Value.GetPreamble(), encoding.Value.GetBytes(sourceFile)).ToArray());
+		static IDictionary<string, byte[]> CreateEncodedSourceDictionary(string sourceFile) => EncodingUtils.Encodings.ToDictionary(encoding => encoding.WebName, encoding => Enumerable.Concat(encoding.GetPreamble(), encoding.GetBytes(sourceFile)).ToArray());
 		internal static readonly IDictionary<string, byte[]> EncodedSourceFiles = CreateEncodedSourceDictionary(FakeSourceFile);
 		internal static readonly IDictionary<string, byte[]> WindowsEncodedSourceFiles = CreateEncodedSourceDictionary(WindowsFakeSourceFile);
 
@@ -193,15 +193,15 @@ public class Tests {
 	private Action<HttpClient, HttpRequestMessage> GetEncodingQueryParameterDecorator(string encodingName) => (client, request) =>
 		request.RequestUri = new Uri(new Uri(client.BaseAddress!, request.RequestUri?.OriginalString), encodingName);
 
-	private async Task TestForAllEncodings(Func<string, Encoding, Task> testFunc) {
+	private async Task TestForAllEncodings(Func<Encoding, Task> testFunc) {
 		foreach (var encoding in EncodingUtils.Encodings)
-			await testFunc(encoding.Key, encoding.Value);
+			await testFunc(encoding);
 	}
 
 	public async Task TestGetSourceForAllEncodings(bool windows = false) {
 		await WithClientAsync(async (client, fakeGitLab) =>
-			await TestForAllEncodings(async (encodingName, encoding) =>
-				await TestGetSource(client, windows ? GetWindowsSourceCodeValidator(encodingName) : GetUnixSourceCodeValidator(encodingName), GetEncodingQueryParameterDecorator(encodingName))
+			await TestForAllEncodings(async (encoding) =>
+				await TestGetSource(client, windows ? GetWindowsSourceCodeValidator(encoding.WebName) : GetUnixSourceCodeValidator(encoding.WebName), GetEncodingQueryParameterDecorator(encoding.WebName))
 			)
 		, $"--{ProxyConfig.GitLabHostOriginArgumentName}={FakeGitLabURL}", $"--{ProxyConfig.PersonalAccessTokenArgumentName}={FakeGitLab.KnownPersonalAccessToken}", windows ? $"--{ProxyConfig.LineEndingChangeArgumentName}={LineEndingChange.Windows}" : string.Empty);
 	}
