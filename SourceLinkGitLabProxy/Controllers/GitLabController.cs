@@ -80,6 +80,7 @@ public class GitLabController : Controller {
 			using var content = await PostProcessContent(response.Content);
 			using var inStream = await content.ReadAsStreamAsync();
 			using var outStream = Response.BodyWriter.AsStream();
+			_logger.LogInformation("Returning source file content.");
 			await inStream.CopyToAsync(outStream);
 		}
 	}

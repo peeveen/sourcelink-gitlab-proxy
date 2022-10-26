@@ -16,9 +16,11 @@ HttpServer:
   Endpoints:
     Http:
       Host: localhost
+      Port: 5041
       Scheme: http
     Https:
       Host: localhost
+      Port: 5042
       Scheme: https
 
       # Locate the cert: use ONE of the following ...
