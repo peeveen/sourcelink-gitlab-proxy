@@ -46,25 +46,21 @@ public class GitLabClient : IGitLabClient {
 		var gitLabURL = $"/api/v4/projects/{encodedProjectPath}/repository/files/{encodedFilePath}/raw?ref={sourceRequest.commitHash}";
 		_logger.LogInformation($"Translated to GitLab request: {gitLabURL}");
 
-		async Task<HttpResponseMessage> performAuthorizedSourceRequest() {
-			async Task<(HttpResponseMessage, bool)> getResponse() {
-				using var request = new HttpRequestMessage(HttpMethod.Get, gitLabURL);
-				authInfo = await authInfo.AuthorizeRequest(request, GenerateOAuthTokens);
-				var response = await _httpClient.SendAsync(request);
-				// If the response is Unauthorized, and the token came from the cache, then we can suggest a retry.
-				var retry = response.StatusCode == System.Net.HttpStatusCode.Unauthorized && authInfo.OAuthTokensCameFromCache;
-				return (response, retry);
-			}
-			var (response, retry) = await getResponse();
-			// If advised to retry, the token must have been old, so possibly expired.
-			if (retry) {
-				authInfo = authInfo.InvalidateCachedOAuthTokens();
-				response.Dispose();
-				(response, retry) = await getResponse();
-			}
-			return response;
+		async Task<(HttpResponseMessage, bool)> getResponse() {
+			using var request = new HttpRequestMessage(HttpMethod.Get, gitLabURL);
+			authInfo = await authInfo.AuthorizeRequest(request, GenerateOAuthTokens);
+			var response = await _httpClient.SendAsync(request);
+			// If the response is Unauthorized, and the token came from the cache, then we can suggest a retry.
+			var retry = response.StatusCode == System.Net.HttpStatusCode.Unauthorized && authInfo.OAuthTokensCameFromCache;
+			return (response, retry);
 		}
-
-		return await performAuthorizedSourceRequest();
+		var (response, retry) = await getResponse();
+		// If advised to retry, the token must have been old, so possibly expired.
+		if (retry) {
+			authInfo = authInfo.InvalidateCachedOAuthTokens();
+			response.Dispose();
+			(response, retry) = await getResponse();
+		}
+		return response;
 	}
 }
