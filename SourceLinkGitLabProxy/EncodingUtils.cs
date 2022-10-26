@@ -3,7 +3,7 @@ using System.Text;
 namespace SourceLinkGitLabProxy;
 
 static class EncodingExtensions {
-	internal static bool Matches(this Encoding encoding, byte[] bytes) =>
+	internal static bool PreambleMatches(this Encoding encoding, byte[] bytes) =>
 		bytes.Length >= encoding.Preamble.Length ? encoding.Preamble.SequenceEqual(bytes[0..encoding.Preamble.Length]) : false;
 }
 
@@ -20,7 +20,7 @@ public class EncodingUtils {
 	static readonly Encoding FallbackEncodingSignature = new UTF8Encoding(false);
 
 	static Encoding DetermineStringEncoding(byte[] bytes) =>
-		Encodings.FirstOrDefault(encoding => encoding.Matches(bytes)) ?? FallbackEncodingSignature;
+		Encodings.FirstOrDefault(encoding => encoding.PreambleMatches(bytes)) ?? FallbackEncodingSignature;
 
 	// Returns the given file content as a string, and the encoding that we THINK was used within it.
 	public static (Encoding, string) GetFileContentAsString(byte[] fileContent) {
