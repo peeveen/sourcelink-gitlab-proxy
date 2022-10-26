@@ -1,6 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SourceLinkGitLabProxy.Controllers;
 
+namespace SourceLinkGitLabProxy.Test;
+
 [TestClass]
 public class URLTests {
 	[TestMethod]

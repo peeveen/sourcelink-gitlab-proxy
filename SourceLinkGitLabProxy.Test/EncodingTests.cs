@@ -1,6 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SourceLinkGitLabProxy;
 
+namespace SourceLinkGitLabProxy.Test;
+
 [TestClass]
 public class EncodingTests {
 	[TestMethod]
