@@ -1,7 +1,6 @@
 using System.Net;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 
@@ -10,12 +9,6 @@ namespace SourceLinkGitLabProxy.Controllers;
 [Controller]
 [Route("/")]
 public class GitLabController : Controller {
-	const string ProjectPathGroupName = "projectPath";
-	const string CommitHashGroupName = "commitHash";
-	const string FilePathGroupName = "filePath";
-	const string SourceLinkURLRegexPattern = @$"^\/(?<{ProjectPathGroupName}>.*)\/raw\/(?<{CommitHashGroupName}>[0-9A-Fa-f]*)\/(?<{FilePathGroupName}>.*)$";
-	static readonly Regex SourceLinkURLRegex = new Regex(SourceLinkURLRegexPattern);
-
 	IGitLabClient _gitLabClient;
 	ILogger _logger;
 	IProxyConfig _configuration;
@@ -24,20 +17,6 @@ public class GitLabController : Controller {
 		_gitLabClient = gitLabClient;
 		_configuration = configuration;
 		_logger = loggerFactory.CreateLogger<GitLabController>();
-	}
-
-	// The URL that Source Link uses is a "raw" access URL.
-	// We need to translate that to a URL that accesses the content via the
-	// GitLab API. To do this, we need to extract the pertinent bits of data
-	// from the original request path.
-	public static GitLabSourceFileRequest ParseURL(string url) {
-		var match = SourceLinkURLRegex.Match(url);
-		if (!match.Success || match.Groups.Count < 4)
-			throw new ArgumentException($"'{url}' could not be parsed as a Source Link URL.");
-		var projectPath = match.Groups[ProjectPathGroupName].Value;
-		var commitHash = match.Groups[CommitHashGroupName].Value;
-		var filePath = match.Groups[FilePathGroupName].Value;
-		return new GitLabSourceFileRequest(projectPath, filePath, commitHash);
 	}
 
 	private async Task<HttpContent> PostProcessContent(HttpContent content) {
@@ -73,9 +52,9 @@ public class GitLabController : Controller {
 			_logger.LogInformation("There is insufficient authorization information to perform a source code fetch. Returning 401 status.");
 			Response.StatusCode = (int)HttpStatusCode.Unauthorized;
 		} else {
-			var sourceLinkRecord = ParseURL(Request.Path);
+			var sourceLinkRecord = new GitLabSourceFileRequest(Request.Path);
 			_logger.LogInformation($"Received Source Link request: {sourceLinkRecord.ToString()}");
-			using var response = await _gitLabClient.GetSourceAsync(sourceLinkRecord, authInfo);
+			using var response = await _gitLabClient.GetSourceAsync(sourceLinkRecord.GitLabURL, authInfo);
 			Response.StatusCode = (int)response.StatusCode;
 			using var content = await PostProcessContent(response.Content);
 			using var inStream = await content.ReadAsStreamAsync();

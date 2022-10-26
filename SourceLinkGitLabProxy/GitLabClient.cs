@@ -36,14 +36,7 @@ public class GitLabClient : IGitLabClient {
 		return new GitLabOAuthTokens();
 	}
 
-	public async Task<HttpResponseMessage> GetSourceAsync(GitLabSourceFileRequest sourceRequest, AuthorizationInfo authInfo) {
-		// We will receive a request along these lines ...
-		// /PROJECT_PATH/raw/LONG_COMMIT_HASH/FILE_PATH
-		// We need to change it to:
-		// GITLAB_HOST_ORIGIN/api/v4/projects/PROJECT_PATH/repository/files/FILE_PATH/raw?ref=LONG_COMMIT_HASH
-		var encodedProjectPath = HttpUtility.UrlEncode(sourceRequest.projectPath);
-		var encodedFilePath = HttpUtility.UrlEncode(sourceRequest.filePath);
-		var gitLabURL = $"/api/v4/projects/{encodedProjectPath}/repository/files/{encodedFilePath}/raw?ref={sourceRequest.commitHash}";
+	public async Task<HttpResponseMessage> GetSourceAsync(string gitLabURL, AuthorizationInfo authInfo) {
 		_logger.LogInformation($"Translated to GitLab request: {gitLabURL}");
 
 		async Task<(HttpResponseMessage, bool)> getResponse() {
