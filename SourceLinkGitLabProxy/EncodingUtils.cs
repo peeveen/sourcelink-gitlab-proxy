@@ -4,7 +4,7 @@ namespace SourceLinkGitLabProxy;
 
 static class EncodingExtensions {
 	internal static bool PreambleMatches(this Encoding encoding, byte[] bytes) =>
-		bytes.Length >= encoding.Preamble.Length ? encoding.Preamble.SequenceEqual(bytes[0..encoding.Preamble.Length]) : false;
+		bytes.Length >= encoding.Preamble.Length && encoding.Preamble.SequenceEqual(bytes[0..encoding.Preamble.Length]);
 }
 
 public class EncodingUtils {
