@@ -2,6 +2,11 @@ using System.Text;
 
 namespace SourceLinkGitLabProxy;
 
+static class EncodingExtensions {
+	internal static bool Matches(this Encoding encoding, byte[] bytes) =>
+		bytes.Length >= encoding.Preamble.Length ? encoding.Preamble.SequenceEqual(bytes[0..encoding.Preamble.Length]) : false;
+}
+
 public class EncodingUtils {
 	public static IEnumerable<Encoding> Encodings = new List<Encoding>{
 		new UTF32Encoding(true, true), // UTF32 Big Endian
@@ -11,24 +16,17 @@ public class EncodingUtils {
 		new UTF8Encoding(true) // UTF8
 	};
 
-	record EncodingSignature(byte[] Signature, Encoding Encoding) {
-		internal bool Matches(byte[] bytes) =>
-			bytes.Length >= Signature.Length ? Signature.SequenceEqual(bytes[0..Signature.Length]) : false;
-	}
-
-	static readonly IEnumerable<EncodingSignature> EncodingSignatures = Encodings.Select(encoding => new EncodingSignature(encoding.GetPreamble(), encoding));
-
 	// If none of the encoding signatures are detected, fall back to UTF-8 (no BOM)
-	static readonly EncodingSignature FallbackEncodingSignature = new EncodingSignature(new byte[0], new UTF8Encoding(false));
+	static readonly Encoding FallbackEncodingSignature = new UTF8Encoding(false);
 
-	static EncodingSignature DetermineStringEncoding(byte[] bytes) =>
-		EncodingSignatures.FirstOrDefault(signature => signature.Matches(bytes)) ?? FallbackEncodingSignature;
+	static Encoding DetermineStringEncoding(byte[] bytes) =>
+		Encodings.FirstOrDefault(encoding => encoding.Matches(bytes)) ?? FallbackEncodingSignature;
 
 	// Returns the given file content as a string, and the encoding that we THINK was used within it.
 	public static (Encoding, string) GetFileContentAsString(byte[] fileContent) {
-		var encodingSignature = DetermineStringEncoding(fileContent);
-		var decodedString = encodingSignature.Encoding.GetString(fileContent[encodingSignature.Signature.Length..]);
-		return (encodingSignature.Encoding, decodedString);
+		var encoding = DetermineStringEncoding(fileContent);
+		var decodedString = encoding.GetString(fileContent[encoding.Preamble.Length..]);
+		return (encoding, decodedString);
 	}
 
 	// For the given string and encoding, return the file content to write out, including encoding preamble.
