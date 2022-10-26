@@ -113,13 +113,17 @@ If you want, you can authorize beforehand, from a command line, like this:
 ```
 > git credential-manager-core store
 protocol=https
-host=your-PROXY-host-and-port-here
+host=your-PROXY-host-here
 username=your-GITLAB-username-here
 password=your-GITLAB-password-here
 ^Z
 ```
 
 > Use Ctrl+Z to end the input, and press Return.
+
+> Visual Studio seems to strip any port number from the host when it goes looking for credentials from _Git Credential Manager_. I _think_ this is a Source Link bug,
+> as it means that, if you are running this on a specific port, then you'll have to add credentials manually, as shown above. Otherwise you should see an interactive
+> login prompt if the credentials are not already known by _GCM_.
 
 ## Line Endings
 
