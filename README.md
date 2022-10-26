@@ -141,4 +141,3 @@ is assumed to be UTF-8.
 - Make use of the refresh token that is returned with the access token, and/or try to determine expiry times of access tokens (though [this page](https://forum.gitlab.com/t/missing-expires-in-in-the-token-response/1232) suggests that they _never expire!_ 😮)
 - Support more encodings for the `LineEndingChange` functionality.
 - Slightly better error handling during access token generation.
-- Change build to `--self-contained`, running on a minimal Linux image.
