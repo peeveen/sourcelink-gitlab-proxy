@@ -1,7 +1,6 @@
 using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
-using System.Web;
 
 namespace SourceLinkGitLabProxy;
 
