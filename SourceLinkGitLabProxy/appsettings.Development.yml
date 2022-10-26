@@ -31,6 +31,7 @@ HttpServer:
       # behind a reverse proxy that deals with HTTPS).
       FilePath: ./certs/selfSigned.pfx
       Password: yourPasswordHere
+      # KeyPath: # if you are using a PEM certificate in FilePath, you can specify the private-key PEM file here.
 
       # .NET Core certificate stores: where's the cert stored?
       # For Windows, this is the OS certificates store (available by launching "certlm" from the Start Menu).

@@ -79,8 +79,9 @@ You **will** need to run this proxy as an HTTPS server, unless:
 
 Otherwise you will need to set some properties in the `HttpServer:Endpoints:Https` section to tell the app about your certificate. There are two methods of describing the certificate to the app:
 
-- **File**: Set the `HttpServer:Endpoints:Https:FilePath` property to the path to the certificate file, and the `HttpServer:Endpoints:Https:Password` property to the certificate password (The .NET Core libraries seem to like PKCS#12
-  certificates best).
+- **File**: Set the `HttpServer:Endpoints:Https:FilePath` property to the path to the certificate file, and either:
+  - `HttpServer:Endpoints:Https:KeyPath` to the private key file path
+  - `HttpServer:Endpoints:Https:Password` to the certificate password (if the certificate is a PKCS#12)
 - **Certificate Store**: The certificate should be imported to a store on the server machine, and the `HttpServer:Endpoints:Https:StoreLocation` and `HttpServer:Endpoints:Https:StoreName` properties should be set (e.g. "LocalMachine" and "My", respectively). The certificate will be found inside the specified store by matching against `HttpServer:Endpoints:Https:Host`.
 
 > ⚠️ The default `appsettings.yml` points to a self-signed certificate which _will not work_, but will suffice if you only using this proxy via HTTP.

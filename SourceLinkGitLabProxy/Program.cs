@@ -78,8 +78,12 @@ public static class KestrelServerOptionsExtensions {
 			var returnCertificate = certificate.FirstOrDefault();
 			return returnCertificate ?? throw new InvalidOperationException($"Certificate not found for {config.Host}.");
 		}
-		if (!string.IsNullOrEmpty(config.FilePath) && !string.IsNullOrEmpty(config.Password))
-			return new X509Certificate2(config.FilePath, config.Password);
+		if (!string.IsNullOrEmpty(config.FilePath)) {
+			if (!string.IsNullOrEmpty(config.KeyPath))
+				return X509Certificate2.CreateFromPemFile(config.FilePath, config.KeyPath);
+			if (!string.IsNullOrEmpty(config.Password))
+				return new X509Certificate2(config.FilePath, config.Password);
+		}
 		throw new InvalidOperationException("No valid certificate configuration found for the current endpoint.");
 	}
 }
@@ -95,5 +99,6 @@ public class EndpointConfiguration {
 	public string? StoreName { get; set; }
 	public string? StoreLocation { get; set; }
 	public string? FilePath { get; set; }
+	public string? KeyPath { get; set; }
 	public string? Password { get; set; }
 }
