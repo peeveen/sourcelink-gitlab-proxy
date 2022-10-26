@@ -8,12 +8,11 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Net.Http.Headers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SourceLinkGitLabProxy.Controllers;
 
 namespace SourceLinkGitLabProxy.Test;
 
 [TestClass]
-public class Tests {
+public class ProxyTests {
 	// Run a fake "GitLab" server locally, at this URL.
 	const int FakeGitLabPort = 6626;
 	static readonly string FakeGitLabURL = $"http://localhost:{FakeGitLabPort}";
@@ -153,17 +152,6 @@ public class Tests {
 		} finally {
 			rulesProvider.Stop();
 		}
-	}
-
-	[TestMethod]
-	public void TestURLParse() {
-		var projectPath = "steven.frew/someproject";
-		var commitHash = "09ef7F892345";
-		var filePath = "blah/yap/folder/file.ext";
-		var parseResult = GitLabController.ParseURL($"/{projectPath}/raw/{commitHash}/{filePath}");
-		Assert.AreEqual(projectPath, parseResult.projectPath);
-		Assert.AreEqual(commitHash, parseResult.commitHash);
-		Assert.AreEqual(filePath, parseResult.filePath);
 	}
 
 	private static async Task ValidateSourceCodeResponse(HttpResponseMessage response, string expectedEncoding, IDictionary<string, byte[]> encodedFilesDictionary) {
