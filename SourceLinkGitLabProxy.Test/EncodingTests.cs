@@ -1,5 +1,4 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SourceLinkGitLabProxy;
 
 namespace SourceLinkGitLabProxy.Test;
 
