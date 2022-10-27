@@ -29,7 +29,7 @@ public class Program {
 			});
 }
 
-// Most of the following code was copied from:
+// Most of the following code was adapted from:
 // https://devblogs.microsoft.com/dotnet/configuring-https-in-asp-net-core-across-different-platforms/
 
 public static class KestrelServerOptionsExtensions {
