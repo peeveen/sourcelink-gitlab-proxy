@@ -122,9 +122,7 @@ password=your-GITLAB-password-here
 
 > Use Ctrl+Z to end the input, and press Return.
 
-> Visual Studio seems to strip any port number from the host when it goes looking for credentials from _Git Credential Manager_. I _think_ this is a Source Link bug,
-> as it means that, if you are running this on a specific port, then you'll have to add credentials manually, as shown above. Otherwise you should see an interactive
-> login prompt if the credentials are not already known by _GCM_.
+> Visual Studio strips any port number from the host when it goes looking for credentials from _Git Credential Manager_. [This has been confirmed as a Visual Studio bug](https://github.com/dotnet/sourcelink/issues/894#issuecomment-1294072766) and should be fixed soon. In the meantime, if you are running this on a specific port, then you'll have to add credentials manually, as shown above. Otherwise you should see an interactive login prompt if the credentials are not already known by _GCM_.
 
 ## Line Endings
 
