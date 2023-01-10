@@ -7,7 +7,10 @@ public class AuthorizationInfo {
 	public const string GitLabPrivateTokenHeaderName = "PRIVATE-TOKEN";
 
 	// Cached OAuth tokens. Prevents us having to make an OAuth request for every request that this proxy receives.
-	// OAuth tokens are cached by user name.
+	// OAuth tokens are cached by the basic authentication header.
+	// Caching by only username leaves this open to attack. Using the entire authentication header
+	// will mean that we will only use the cached tokens if the same password is provided as when
+	// a successful authentication took place.
 	static readonly IDictionary<string, GitLabOAuthTokens> _accessTokens = new ConcurrentDictionary<string, GitLabOAuthTokens>();
 
 	private AuthorizationInfo() { }
@@ -15,6 +18,7 @@ public class AuthorizationInfo {
 	private AuthorizationInfo(AuthorizationInfo authInfo) {
 		OAuthTokens = authInfo.OAuthTokens;
 		OAuthTokensCameFromCache = authInfo.OAuthTokensCameFromCache;
+		_basicAuthenticationHeader = authInfo._basicAuthenticationHeader;
 		BasicAuthenticationHeaderUser = authInfo.BasicAuthenticationHeaderUser;
 		BasicAuthenticationHeaderPassword = authInfo.BasicAuthenticationHeaderPassword;
 		PersonalAccessToken = authInfo.PersonalAccessToken;
@@ -37,7 +41,7 @@ public class AuthorizationInfo {
 	public AuthorizationInfo InvalidateCachedOAuthTokens() {
 		if (!OAuthTokensCameFromCache)
 			return this;
-		_accessTokens.Remove(BasicAuthenticationHeaderUser);
+		_accessTokens.Remove(_basicAuthenticationHeader);
 		return new AuthorizationInfo(this) {
 			OAuthTokens = new GitLabOAuthTokens(),
 			OAuthTokensCameFromCache = false
@@ -51,17 +55,21 @@ public class AuthorizationInfo {
 	public GitLabOAuthTokens OAuthTokens { get; init; }
 	public bool OAuthTokensCameFromCache { get; init; } = false;
 
+	// Undeciphered Basic Authentication header, if one was received.
+	protected string _basicAuthenticationHeader = string.Empty;
+
 	// Deciphered contains of the Basic Authentication header, if one was received.
 	public string BasicAuthenticationHeaderUser { get; init; } = string.Empty;
 	public string BasicAuthenticationHeaderPassword { get; init; } = string.Empty;
 	private string BasicAuthenticationHeader {
 		init {
+			_basicAuthenticationHeader = value;
 			var authParts = value.Split(':');
 			BasicAuthenticationHeaderUser = authParts.First();
 			// First colon is a guaranteed username:password separator.
 			// Any further colons will be part of the password.
 			BasicAuthenticationHeaderPassword = string.Join(string.Empty, authParts[1..]);
-			if (OAuthTokensCameFromCache = _accessTokens.TryGetValue(BasicAuthenticationHeaderUser, out var accessTokens))
+			if (OAuthTokensCameFromCache = _accessTokens.TryGetValue(_basicAuthenticationHeader, out var accessTokens))
 				this.OAuthTokens = accessTokens;
 		}
 	}
@@ -78,7 +86,7 @@ public class AuthorizationInfo {
 			return this;
 		} else if (string.IsNullOrEmpty(OAuthTokens.AccessToken)) {
 			var generatedTokens = await tokenGenerator(BasicAuthenticationHeaderUser, BasicAuthenticationHeaderPassword);
-			_accessTokens[BasicAuthenticationHeaderUser] = generatedTokens;
+			_accessTokens[_basicAuthenticationHeader] = generatedTokens;
 			request.Headers.Add(HeaderNames.Authorization, $"Bearer {generatedTokens.AccessToken}");
 			return new AuthorizationInfo(this) {
 				OAuthTokens = generatedTokens,
