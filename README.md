@@ -1,5 +1,7 @@
 # Source Link GitLab proxy
 
+## [Available from DockerHub](https://hub.docker.com/r/peeveen/sourcelinkgitlabproxy)
+
 [Source Link](https://github.com/dotnet/sourcelink) is a technology promoted by Microsoft to allow dynamic retrieval of code from a repository when debugging. The repository URL is encoded into the PDB, and, during debugging, when the time comes to step into the code from that repository, the IDE will fetch the appropriate version of the source code from that repository, and seamlessly step into it.
 
 The Source Link technology relies on accessing raw source code from a repository using [Basic Authentication](https://en.wikipedia.org/wiki/Basic_access_authentication) over HTTPS. This is supported by [GitHub](https://github.com/), [BitBucket](https://bitbucket.org/), and several other online repository providers ... [but not private GitLab servers](https://gitlab.com/gitlab-org/gitlab/-/issues/19189), which instead expect any such access to be done via the GitLab [API](https://docs.gitlab.com/ee/api/repository_files.html), a process that is unfortunately not directly compatible with Source Link.
