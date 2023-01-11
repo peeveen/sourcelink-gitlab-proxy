@@ -1,6 +1,6 @@
 # Source Link GitLab proxy
 
-## [Available from DockerHub](https://hub.docker.com/r/peeveen/sourcelinkgitlabproxy)
+[Available from DockerHub](https://hub.docker.com/r/peeveen/sourcelinkgitlabproxy)
 
 [Source Link](https://github.com/dotnet/sourcelink) is a technology promoted by Microsoft to allow dynamic retrieval of code from a repository when debugging. The repository URL is encoded into the PDB, and, during debugging, when the time comes to step into the code from that repository, the IDE will fetch the appropriate version of the source code from that repository, and seamlessly step into it.
 
