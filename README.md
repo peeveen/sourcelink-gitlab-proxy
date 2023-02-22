@@ -134,7 +134,7 @@ Visual Studio will **reject** any retrieved source file if the exact checksum of
 
 This means that, if you published a NuGet package from a Windows environment (where the code was checked-out with CRLF line-endings), but Source Link provides the code for the package _directly from the Git repository_ (where the code will have Unix-style LF line-endings), then there will be a mismatch.
 
-You can use the `LineEndingType` argument to make the proxy attempt a line-ending replacement on any fetched source content. For the proxy to perform such a string modification, it has to try to figure out the file encoding so that it can decode the content, perform the substitutions, then re-encode that modified content using the original encoding type. For now, only UTF-8/16/32 encodings are supported, and if a source file has no byte-order-mark, it
+You can use the `LineEndingChange` argument to make the proxy attempt a line-ending replacement on any fetched source content. For the proxy to perform such a string modification, it has to try to figure out the file encoding so that it can decode the content, perform the substitutions, then re-encode that modified content using the original encoding type. For now, only UTF-8/16/32 encodings are supported, and if a source file has no byte-order-mark, it
 is assumed to be UTF-8.
 
 ## TODO
