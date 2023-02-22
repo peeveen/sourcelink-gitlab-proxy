@@ -86,7 +86,7 @@ Otherwise you will need to set some properties in the `HttpServer:Endpoints:Http
   - `HttpServer:Endpoints:Https:Password` to the certificate password (if the certificate is a PKCS#12)
 - **Certificate Store**: The certificate should be imported to a store on the server machine, and the `HttpServer:Endpoints:Https:StoreLocation` and `HttpServer:Endpoints:Https:StoreName` properties should be set (e.g. "LocalMachine" and "My", respectively). The certificate will be found inside the specified store by matching against `HttpServer:Endpoints:Https:Host`.
 
-> ⚠️ The default `appsettings.yml` points to a self-signed certificate which _will not work_, but will suffice if you only using this proxy via HTTP.
+> ⚠️ The default `appsettings.yml` points to a self-signed certificate which _will not work_, but will suffice if you are only using this proxy via HTTP.
 
 > Read more about certificates in the [separate README file in the `certs` folder](./SourceLinkGitLabProxy/certs/).
 
@@ -108,7 +108,7 @@ Otherwise, the proxy will perform a series of steps to obtain an access token.
 
 ## Git Credential Manager
 
-If Visual Studio gets a `401 Unauthorized` response from the proxy (which it will if your are using OAuth-style access), it will
+If Visual Studio gets a `401 Unauthorized` response from the proxy (which it will if you are using OAuth-style access), it will
 attempt to get access credentials from _Git Credential Manager_. If it doesn't find any, it should then automatically prompt you for the credentials to access GitLab with.
 
 If you want, you can authorize beforehand, from a command line, like this:
@@ -124,7 +124,7 @@ password=your-GITLAB-password-here
 
 > Use Ctrl+Z to end the input, and press Return.
 
-> Visual Studio strips any port number from the host when it goes looking for credentials from _Git Credential Manager_. [This has been confirmed as a Visual Studio bug](https://github.com/dotnet/sourcelink/issues/894#issuecomment-1294072766) and should be fixed soon. In the meantime, if you are running this on a specific port, then you'll have to add credentials manually, as shown above. Otherwise you should see an interactive login prompt if the credentials are not already known by _GCM_.
+> Visual Studio strips any port number from the host when it goes looking for credentials from _Git Credential Manager_. [This has been confirmed as a Visual Studio bug](https://github.com/dotnet/sourcelink/issues/894#issuecomment-1294072766) but is fixed in Visual Studio 17.5. If you are using an earlier version of Visual Studio and are running this on a specific port, then you'll have to add credentials manually, as shown above. Otherwise you should see an interactive login prompt if the credentials are not already known by _GCM_.
 
 ## Line Endings
 
