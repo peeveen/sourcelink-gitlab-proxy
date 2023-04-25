@@ -20,6 +20,7 @@ public class Program {
 			.ConfigureAppConfiguration((context, builder) => {
 				builder.AddYamlFile(Path.Join(context.HostingEnvironment.ContentRootPath, $"{AppSettingsFilenameBase}.yml"));
 				builder.AddYamlFile(Path.Join(context.HostingEnvironment.ContentRootPath, $"{AppSettingsFilenameBase}.{context.HostingEnvironment.EnvironmentName}.yml"), optional: true);
+				builder.AddCommandLine(args);
 			})
 			.ConfigureLogging(loggingBuilder => loggingBuilder.AddNLog())
 			.ConfigureWebHostDefaults(webBuilder => {

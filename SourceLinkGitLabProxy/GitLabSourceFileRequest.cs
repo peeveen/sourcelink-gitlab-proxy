@@ -10,7 +10,7 @@ public class GitLabSourceFileRequest {
 	private const string ProjectPathGroupName = "projectPath";
 	private const string CommitHashGroupName = "commitHash";
 	private const string FilePathGroupName = "filePath";
-	private const string SourceLinkURLRegexPattern = @$"^\/(?<{ProjectPathGroupName}>.*)\/raw\/(?<{CommitHashGroupName}>[0-9A-Fa-f]*)\/(?<{FilePathGroupName}>.*)$";
+	private const string SourceLinkURLRegexPattern = @$"^\/(?<{ProjectPathGroupName}>.*?)(\/-)?\/raw\/(?<{CommitHashGroupName}>[0-9A-Fa-f]*)\/(?<{FilePathGroupName}>.*)$";
 	private static readonly Regex SourceLinkURLRegex = new Regex(SourceLinkURLRegexPattern);
 
 	public GitLabSourceFileRequest(string url) : this(ParseURL(url)) { }
@@ -20,7 +20,8 @@ public class GitLabSourceFileRequest {
 		FilePath = components.filePath;
 		CommitHash = components.commitHash;
 		// We have received a request along these lines ...
-		// /PROJECT_PATH/raw/LONG_COMMIT_HASH/FILE_PATH
+		// /PROJECT_PATH/-/raw/LONG_COMMIT_HASH/FILE_PATH
+		// (though sometimes the -/ is not there?)
 		// We need to change it to:
 		// GITLAB_HOST_ORIGIN/api/v4/projects/PROJECT_PATH/repository/files/FILE_PATH/raw?ref=LONG_COMMIT_HASH
 		var encodedProjectPath = HttpUtility.UrlEncode(ProjectPath);
