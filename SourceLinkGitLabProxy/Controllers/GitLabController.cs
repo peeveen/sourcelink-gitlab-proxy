@@ -11,11 +11,13 @@ namespace SourceLinkGitLabProxy.Controllers;
 [Controller]
 [Route("/")]
 public class GitLabController : Controller {
+	private const string FaviconFilename = "favicon.png";
+
+	private static readonly byte[]? _favicon = GetEmbeddedResourceBytes(typeof(Program).GetTypeInfo().Assembly, FaviconFilename);
+
 	private readonly IGitLabClient _gitLabClient;
 	private readonly ILogger _logger;
 	private readonly IProxyConfig _configuration;
-	private const string FaviconFilename = "favicon.png";
-	private static readonly byte[]? favicon = GetEmbeddedResourceBytes(typeof(Program).GetTypeInfo().Assembly, FaviconFilename);
 
 	/// <summary>
 	/// Obtains an embedded resource stream from the given assembly.
@@ -66,7 +68,7 @@ public class GitLabController : Controller {
 	[HttpGet]
 	[Route("/favicon.ico")]
 	[SuppressMessage("csharp", "CA1822")]
-	public IActionResult GetIcon() => favicon == null ? new NotFoundResult() : new FileContentResult(favicon, MediaTypeNames.Application.Octet);
+	public IActionResult GetIcon() => _favicon == null ? new NotFoundResult() : new FileContentResult(_favicon, MediaTypeNames.Application.Octet);
 
 	[HttpGet]
 	[Route("/version")]
