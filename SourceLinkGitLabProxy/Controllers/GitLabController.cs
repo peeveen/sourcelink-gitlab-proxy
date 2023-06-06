@@ -44,7 +44,6 @@ public class GitLabController : Controller {
 		return resourceBytes;
 	}
 
-
 	public GitLabController(IProxyConfig configuration, ILoggerFactory loggerFactory, IGitLabClient gitLabClient) {
 		_gitLabClient = gitLabClient;
 		_configuration = configuration;
