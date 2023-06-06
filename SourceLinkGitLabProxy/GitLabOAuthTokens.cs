@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace SourceLinkGitLabProxy;
 
 // OAuth token info that is returned from GitLab.
-public struct GitLabOAuthTokens {
+public readonly struct GitLabOAuthTokens {
 	[JsonInclude]
 	[JsonPropertyName("access_token")]
 	public string AccessToken { get; init; }

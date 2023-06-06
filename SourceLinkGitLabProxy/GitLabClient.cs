@@ -19,7 +19,7 @@ public class GitLabClient : IGitLabClient {
 	private async Task<GitLabOAuthTokens> GenerateOAuthTokens(string username, string password) {
 		using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_httpClient.BaseAddress!, "/oauth/token"));
 		var tokenRequest = new GitLabTokenRequest { Username = username, Password = password, Scope = _config.OAuthTokenRequestScope };
-		_logger.LogInformation($"Sending request for OAuth access token for user '{username}' ...");
+		_logger.LogInformation("Sending request for OAuth access token for user '{UserName}' ...", username);
 		var tokenRequestJson = JsonSerializer.Serialize(tokenRequest);
 		request.Content = new StringContent(tokenRequestJson, Encoding.UTF8, MediaTypeNames.Application.Json);
 		using var response = await _httpClient.SendAsync(request);
@@ -30,13 +30,13 @@ public class GitLabClient : IGitLabClient {
 			_logger.LogInformation($"Access token successfully retrieved.");
 			return tokens;
 		}
-		_logger.LogError($"Failed to generate OAuth tokens from the given username & password. Status code from server was {response.StatusCode}.");
+		_logger.LogError("Failed to generate OAuth tokens from the given username & password. Status code from server was {StatusCode}.", response.StatusCode);
 		// Return empty tokens. This will generate a 401 down the line.
 		return new GitLabOAuthTokens();
 	}
 
 	public async Task<HttpResponseMessage> GetSourceAsync(string gitLabURL, AuthorizationInfo authInfo) {
-		_logger.LogInformation($"Translated to GitLab request: {gitLabURL}");
+		_logger.LogInformation("Translated to GitLab request: {GitLabUrl}", gitLabURL);
 
 		async Task<(HttpResponseMessage, bool)> getResponse() {
 			using var request = new HttpRequestMessage(HttpMethod.Get, gitLabURL);

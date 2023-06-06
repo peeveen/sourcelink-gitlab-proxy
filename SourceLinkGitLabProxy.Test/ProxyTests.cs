@@ -60,7 +60,7 @@ public class ProxyTests {
 
 		// Responds to the /oauth/token endpoint. POSTed data should be a username and password in JSON.
 		// Returns some access tokens if they match our expected username/password combo.
-		async Task getOAuthTokens(HttpRequest request, HttpResponse response, string requestJson) {
+		async Task GetOAuthTokens(HttpRequest request, HttpResponse response, string requestJson) {
 			var tokenRequest = JsonSerializer.Deserialize<GitLabTokenRequest>(requestJson);
 			if (tokenRequest != null)
 				if (tokenRequest.Username == TestUserName && tokenRequest.Password == TestUserPassword) {
@@ -117,7 +117,7 @@ public class ProxyTests {
 			var providerTask = Task.Run(async () => {
 				var builder = WebApplication.CreateBuilder();
 				var gitLabApp = builder.Build();
-				gitLabApp.Map("/oauth/token", app => HandleRequest(app, "POST", getOAuthTokens));
+				gitLabApp.Map("/oauth/token", app => HandleRequest(app, "POST", GetOAuthTokens));
 				gitLabApp.Map("/api/v4/projects", app => HandleRequest(app, "GET", getSourceCode));
 				cancellationToken.Register(() => {
 					gitLabApp.StopAsync();
@@ -132,7 +132,7 @@ public class ProxyTests {
 		}
 	}
 
-	private HttpClient GetTestClient(params string[] args) {
+	private static HttpClient GetTestClient(params string[] args) {
 		var hostBuilder = Host
 			.CreateDefaultBuilder(args)
 			.ConfigureWebHostDefaults(webBuilder => webBuilder.UseTestServer().UseStartup<SourceLinkGitLabProxy.Startup>());
@@ -140,11 +140,7 @@ public class ProxyTests {
 		return testServer.GetTestClient();
 	}
 
-	private void WithClient(Action<HttpClient, FakeGitLab> testFunc, int refreshDelaySeconds = 0, params string[] additionalArgs) {
-		Task.WaitAll(WithClientAsync(async (client, rulesProvider) => await Task.Run(() => testFunc(client, rulesProvider)), additionalArgs));
-	}
-
-	private async Task WithClientAsync(Func<HttpClient, FakeGitLab, Task> testFunc, params string[] additionalArgs) {
+	private static async Task WithClientAsync(Func<HttpClient, FakeGitLab, Task> testFunc, params string[] additionalArgs) {
 		var rulesProvider = new FakeGitLab();
 		try {
 			var client = GetTestClient(additionalArgs);
@@ -161,7 +157,7 @@ public class ProxyTests {
 		Assert.IsTrue(bytes.SequenceEqual(encodedFilesDictionary[expectedEncoding]));
 	}
 
-	private async Task TestGetSource(HttpClient client, Func<HttpResponseMessage, Task> responseValidator, params Action<HttpClient, HttpRequestMessage>[] requestDecorators) {
+	private static async Task TestGetSource(HttpClient client, Func<HttpResponseMessage, Task> responseValidator, params Action<HttpClient, HttpRequestMessage>[] requestDecorators) {
 		// This exact path doesn't matter, so long as it's in the correct "form".
 		using var request = new HttpRequestMessage(HttpMethod.Get, "/path/to/my/project/raw/342923974a8678d8787e87f78b8c/path/to/my/file/");
 		foreach (var requestDecorator in requestDecorators)
@@ -170,7 +166,7 @@ public class ProxyTests {
 		await responseValidator(response);
 	}
 
-	private async Task TestGetSource(HttpClient client, Action<HttpResponseMessage> responseValidator, params Action<HttpClient, HttpRequestMessage>[] requestDecorators) =>
+	private static async Task TestGetSource(HttpClient client, Action<HttpResponseMessage> responseValidator, params Action<HttpClient, HttpRequestMessage>[] requestDecorators) =>
 		await TestGetSource(client, async (resp) => await Task.Run(() => responseValidator(resp)), requestDecorators);
 
 	private static Func<HttpResponseMessage, Task> GetSourceCodeValidator(IDictionary<string, byte[]> encodedFilesDictionary, string? expectedEncoding = null) => async (resp) => await ValidateSourceCodeResponse(resp, expectedEncoding ?? Encoding.UTF8.WebName, encodedFilesDictionary);
@@ -179,15 +175,15 @@ public class ProxyTests {
 
 	private void AddValidBasicAuthenticationHeader(HttpClient client, HttpRequestMessage req) => req.Headers.Add(HeaderNames.Authorization, CreateBasicAuthenticationToken(FakeGitLab.TestUserName, FakeGitLab.TestUserPassword));
 
-	private Action<HttpClient, HttpRequestMessage> GetEncodingQueryParameterDecorator(string encodingName) => (client, request) =>
+	private static Action<HttpClient, HttpRequestMessage> GetEncodingQueryParameterDecorator(string encodingName) => (client, request) =>
 		request.RequestUri = new Uri(new Uri(client.BaseAddress!, request.RequestUri?.OriginalString), encodingName);
 
-	private async Task TestForAllEncodings(Func<Encoding, Task> testFunc) {
+	private static async Task TestForAllEncodings(Func<Encoding, Task> testFunc) {
 		foreach (var encoding in EncodingUtils.Encodings)
 			await testFunc(encoding);
 	}
 
-	public async Task TestGetSourceForAllEncodings(Func<string, Func<HttpResponseMessage, Task>> sourceCodeValidatorGenerator, params string[] additionalArgs) {
+	public static async Task TestGetSourceForAllEncodings(Func<string, Func<HttpResponseMessage, Task>> sourceCodeValidatorGenerator, params string[] additionalArgs) {
 		var args = Enumerable.Concat(new[] { $"--{ProxyConfig.GitLabHostOriginArgumentName}={FakeGitLabURL}", $"--{ProxyConfig.PersonalAccessTokenArgumentName}={FakeGitLab.KnownPersonalAccessToken}" }, additionalArgs).ToArray();
 		await WithClientAsync(async (client, fakeGitLab) =>
 			await TestForAllEncodings(async (encoding) =>

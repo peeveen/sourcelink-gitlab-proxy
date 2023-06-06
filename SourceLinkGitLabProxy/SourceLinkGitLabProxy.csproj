@@ -10,4 +10,7 @@
 		<PackageReference Include="NLog.Extensions.Logging" Version="5.0.4" />
 		<PackageReference Include="Opw.HttpExceptions.AspNetCore" Version="4.0.2" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="favicon.png" />
+  </ItemGroup>
 </Project>
