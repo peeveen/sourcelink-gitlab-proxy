@@ -72,12 +72,13 @@ public static class KestrelServerOptionsExtensions {
 
 			foreach (var address in getIPAddresses(config.Host))
 				options.Listen(address, port,
-						listenOptions => {
-							if (config.Scheme == "https") {
-								var certificate = LoadCertificate(config, environment);
-								listenOptions.UseHttps(certificate);
-							}
-						});
+					listenOptions => {
+						if (config.Scheme == "https") {
+							var certificate = LoadCertificate(config, environment);
+							listenOptions.UseHttps(certificate);
+						}
+					}
+				);
 		}
 	}
 
