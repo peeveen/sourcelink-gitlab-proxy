@@ -15,9 +15,31 @@ LineEndingType: None
 HttpServer:
   Endpoints:
     Http:
+      # Host address.
+      # Can be "localhost", or an IP address.
+      # Anything else is treated as 0.0.0.0.
+      # Default is "0.0.0.0".
       Host: localhost
-      Port: 5041
+
+      # HTTP scheme. Can be "http" or "https".
+      # Default is "http".
+      # If "https":
+      # 1) SSL cert/key stuff needs to be configured.
+      # 2) If using a certificate store instead of
+      # a certificate file, the certificate will be
+      # picked by matching the certificate subject
+      # name to the value of "Host".
       Scheme: http
+
+      # Port. Optional.
+      # Can be a numeric port number, or the name
+      # of an environment variable to read the port number from.
+      # If omitted, it will be the default for the scheme (i.e. 80/443)
+      Port: 5041
+
+      # A quick way to enable/disable this endpoint
+      # Default is true.
+      Enabled: true
     Https:
       Host: localhost
       Port: 5042
